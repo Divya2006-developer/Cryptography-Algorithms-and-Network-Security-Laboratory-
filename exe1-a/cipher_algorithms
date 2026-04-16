@@ -1,0 +1,98 @@
+<script>
+    const mod = (n, m) => ((n % m) + m) % m;
+
+    function updateMatrixUI() {
+        const size = parseInt(document.getElementById('matrixSize').value);
+        const container = document.getElementById('matrixContainer');
+        container.className = size === 2 ? 'grid-2x2' : 'grid-3x3';
+        container.innerHTML = '';
+  
+        const defaults2 = [3, 3, 2, 5];
+        const defaults3 = [6, 24, 1, 13, 16, 10, 20, 17, 15];
+        const vals = size === 2 ? defaults2 : defaults3;
+
+        for (let i = 0; i < size * size; i++) {
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'matrix-cell';
+            input.id = `cell${i}`;
+            input.value = vals[i];
+            container.appendChild(input);
+        }
+    }
+
+
+    function runShift(encrypt) {
+        const text = document.getElementById('shiftInput').value;
+        let k = parseInt(document.getElementById('shiftKey').value) || 0;
+        if (!encrypt) k = 26 - (k % 26);
+        
+        const res = text.replace(/[a-z]/gi, c => {
+            const base = c <= 'Z' ? 65 : 97;
+            return String.fromCharCode(mod(c.charCodeAt(0) - base + k, 26) + base);
+        });
+        document.getElementById('shiftRes').innerText = res;
+    }
+    function getMatrix(size) {
+        let m = [];
+        for (let i = 0; i < size; i++) {
+            let row = [];
+            for (let j = 0; j < size; j++) {
+                row.push(parseInt(document.getElementById(`cell${i * size + j}`).value) || 0);
+            }
+            m.push(row);
+        }
+        return m;
+    }
+
+    function modInverse(a, m) {
+        for (let x = 1; x < m; x++) if (((a % m) * (x % m)) % m == 1) return x;
+        return null;
+    }
+
+    function getInverseMatrix(m, size) {
+        let det, invDet, adj;
+        if (size === 2) {
+            det = mod(m[0][0] * m[1][1] - m[0][1] * m[1][0], 26);
+            invDet = modInverse(det, 26);
+            if (!invDet) return null;
+            adj = [[m[1][1], -m[0][1]], [-m[1][0], m[0][0]]];
+        } else {
+            det = mod(m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1]) - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0]) + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]), 26);
+            invDet = modInverse(det, 26);
+            if (!invDet) return null;
+            adj = [
+                [mod(m[1][1]*m[2][2]-m[1][2]*m[2][1], 26), mod(-(m[0][1]*m[2][2]-m[0][2]*m[2][1]), 26), mod(m[0][1]*m[1][2]-m[0][2]*m[1][1], 26)],
+                [mod(-(m[1][0]*m[2][2]-m[1][2]*m[2][0]), 26), mod(m[0][0]*m[2][2]-m[0][2]*m[2][0], 26), mod(-(m[0][0]*m[1][2]-m[0][2]*m[1][0]), 26)],
+                [mod(m[1][0]*m[2][1]-m[1][1]*m[2][0], 26), mod(-(m[0][0]*m[2][1]-m[0][1]*m[2][0]), 26), mod(m[0][0]*m[1][1]-m[0][1]*m[1][0], 26)]
+            ];
+        }
+        return adj.map(row => row.map(v => mod(v * invDet, 26)));
+    }
+
+    function runHill(encrypt) {
+        const size = parseInt(document.getElementById('matrixSize').value);
+        let text = document.getElementById('hillInput').value.toUpperCase().replace(/[^A-Z]/g, '');
+        while (text.length % size !== 0) text += 'X';
+
+        let m = getMatrix(size);
+        if (!encrypt) {
+            m = getInverseMatrix(m, size);
+            if (!m) return alert("Key is not invertible (GCD of Determinant and 26 must be 1).");
+        }
+
+        let res = "";
+        for (let i = 0; i < text.length; i += size) {
+            let vector = [];
+            for (let j = 0; j < size; j++) vector.push(text.charCodeAt(i + j) - 65);
+            
+            for (let r = 0; r < size; r++) {
+                let sum = 0;
+                for (let c = 0; c < size; c++) sum += m[r][c] * vector[c];
+                res += String.fromCharCode(mod(sum, 26) + 65);
+            }
+        }
+        document.getElementById('hillRes').innerText = res;
+    }
+    updateMatrixUI();
+</script>
