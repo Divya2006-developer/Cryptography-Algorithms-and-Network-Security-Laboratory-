@@ -1,15 +1,15 @@
 <script>
-        /* SHA-1 Logic */
+      
         class Sha1 {
             static hash(msg) {
-                // Initialize hash values
+               
                 let H0 = 0x67452301;
                 let H1 = 0xefcdab89;
                 let H2 = 0x98badcfe;
                 let H3 = 0x10325476;
                 let H4 = 0xc3d2e1f0;
 
-                // Pre-processing
+               
                 msg += String.fromCharCode(0x80);
                 const l = msg.length / 4 + 2;
                 const N = Math.ceil(l / 16);
@@ -30,11 +30,11 @@
                 M[N - 1][14] = Math.floor(lenHi);
                 M[N - 1][15] = lenLo;
 
-                // Main loop
+
                 for (let i = 0; i < N; i++) {
                     const W = new Array(80);
 
-                    // Prepare message schedule
+
                     for (let t = 0; t < 16; t++) {
                         W[t] = M[i][t];
                     }
@@ -48,7 +48,6 @@
                     let D = H3;
                     let E = H4;
 
-                    // Main compression function loop
                     for (let t = 0; t < 80; t++) {
                         let f, K;
 
@@ -81,7 +80,7 @@
                     H4 = (H4 + E) >>> 0;
                 }
 
-                // Produce the final hash value
+
                 const hash = [H0, H1, H2, H3, H4]
                     .map(h => ('00000000' + h.toString(16)).slice(-8))
                     .join('');
@@ -100,7 +99,7 @@
             document.getElementById("hashOutput").textContent = "SHA-1: " + hash;
         }
 
-        /* CMAC Logic */
+
         async function generateCMAC() {
             const msg = document.getElementById('cmacMessage').value;
             const keyText = document.getElementById('cmacKey').value;
@@ -115,13 +114,13 @@
             const msgData = encoder.encode(msg);
 
             try {
-                // Using HMAC-SHA256 as a robust browser-native MAC implementation
+                
                 const cryptoKey = await crypto.subtle.importKey(
                     "raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
                 );
                 const signature = await crypto.subtle.sign("HMAC", cryptoKey, msgData);
 
-                // Representing the first 16 bytes as the CMAC Tag
+     
                 const tag = Array.from(new Uint8Array(signature)).slice(0, 16)
                     .map(b => b.toString(16).padStart(2, '0')).join('');
 
